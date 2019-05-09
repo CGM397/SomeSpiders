@@ -1,16 +1,42 @@
 import requests
 from bs4 import BeautifulSoup
-import urllib
-from urllib import request
-from http import cookiejar
+from selenium import webdriver
+import time
 
 
-def login():
-    login_info = {"email": "18805199056", "password": "123456"}
-    cj = cookiejar.CookieJar()
-    opener = request.build_opener(request.HTTPCookieProcessor(cj))
-    req = request.Request('https://passport.meituan.com/account/unitivelogin', data=login_info)
-    # response = opener.open(req)
+def login_and_get_info():
+    driver = webdriver.Chrome()
+    driver.get("https://passport.meituan.com/account/unitivelogin"
+               "?service=maoyan&continue=https%3A%2F%2Fmaoyan.com%2Fpassport%2Flogin%3Fredirect%3D%252F")
+
+    driver.find_element_by_name("email").send_keys("18805199056")
+    driver.find_element_by_name("password").send_keys("123456cgm")
+    driver.find_element_by_name("commit").click()
+
+    time.sleep(3)
+    driver.save_screenshot("maoyan.png")
+    for i in range(0, 66):
+        get_info(driver, "3", i * 30)
+
+
+def get_info(driver, show_type, offset):
+    driver.get("https://maoyan.com/films?showType=" + show_type + "&offset=" + str(offset))
+    film_names = BeautifulSoup(driver.page_source, 'lxml').find_all('div', class_="channel-detail movie-item-title")
+    film_score = BeautifulSoup(driver.page_source, 'lxml').find_all('div',
+                                                                    class_="channel-detail channel-detail-orange")
+
+    f = open("mao_yan_films.txt", "a", encoding="UTF-8")
+
+    for index in range(len(film_names)):
+        res = film_names[index]['title'] + "; 评分: "
+        if film_score[index].string == '暂无评分':
+            res += film_score[index].string
+        else:
+            res += film_score[index].contents[0].string + film_score[index].contents[1].string
+        res += "\n"
+        f.write(res)
+    f.close()
+    return
 
 
 def get_film_name_and_score(show_type, offset):
