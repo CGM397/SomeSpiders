@@ -1,3 +1,3 @@
-from spiders.maoyanSpider.getFilmNameAndScore import get_film_name_and_score, login_and_get_info
+from spiders.maoyanSpider.getFilmNameAndScore import login_and_get_info
 
 login_and_get_info()

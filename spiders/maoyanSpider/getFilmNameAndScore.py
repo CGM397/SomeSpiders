@@ -21,14 +21,17 @@ def login_and_get_info():
 
 def get_info(driver, show_type, offset):
     driver.get("https://maoyan.com/films?showType=" + show_type + "&offset=" + str(offset))
-    film_names = BeautifulSoup(driver.page_source, 'lxml').find_all('div', class_="channel-detail movie-item-title")
+    film_names = BeautifulSoup(driver.page_source, 'lxml').find_all('div',
+                                                                    class_="channel-detail movie-item-title")
     film_score = BeautifulSoup(driver.page_source, 'lxml').find_all('div',
                                                                     class_="channel-detail channel-detail-orange")
+    film_id_hrefs = []
 
     f = open("mao_yan_films.txt", "a", encoding="UTF-8")
 
     for index in range(len(film_names)):
         res = film_names[index]['title'] + "; 评分: "
+        film_id_hrefs.append(film_names[index].contents[1]["href"])
         if film_score[index].string == '暂无评分':
             res += film_score[index].string
         else:
@@ -36,6 +39,7 @@ def get_info(driver, show_type, offset):
         res += "\n"
         f.write(res)
     f.close()
+    print(film_id_hrefs[0])
     return
 
 
@@ -43,7 +47,8 @@ def get_film_name_and_score(show_type, offset):
     params = {'showType': show_type, 'offset': offset}
     r = requests.get("https://maoyan.com/films", params=params)
     film_names = BeautifulSoup(r.content.decode(), 'lxml').find_all('div', class_="channel-detail movie-item-title")
-    film_score = BeautifulSoup(r.content.decode(), 'lxml').find_all('div', class_="channel-detail channel-detail-orange")
+    film_score = BeautifulSoup(r.content.decode(), 'lxml').find_all('div',
+                                                                    class_="channel-detail channel-detail-orange")
 
     f = open("mao_yan_films.txt", "a", encoding="UTF-8")
 
