@@ -1,4 +1,4 @@
-import requests
+# import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import time
@@ -43,43 +43,94 @@ def get_info(driver, show_type, offset):
     f.close()
 
 # get other film info like comment and introduction and description
-    save_comments = open("film_comments.txt", "a", encoding="UTF-8")
-    save_introduction = open("film_introduction.txt", "a", encoding="UTF-8")
-    save_description = open("film_description.txt", "a", encoding="UTF-8")
+
+    comments = open("film_comments.txt", "a", encoding="UTF-8")
+    introductions = open("film_introduction.txt", "a", encoding="UTF-8")
+    descriptions = open("film_description.txt", "a", encoding="UTF-8")
+    directors = open("film_director.txt", "a", encoding="UTF-8")
 
     for film_name, film_href in film_id_hrefs.items():
         href = "https://maoyan.com" + film_href
         driver.get(href)
-        film_hot_comment = BeautifulSoup(driver.page_source, 'lxml').find('div', class_="comment-content")
-        if film_hot_comment is None:
-            save_comments.write(film_name + ": 暂无评价\n")
-        else:
-            save_comments.write(film_name + ": " + film_hot_comment.string + "\n")
 
-        film_introductions = BeautifulSoup(driver.page_source, "lxml").find_all('li', class_='ellipsis')
-        intro_type = ['类型', '时长', '上映时间']
-        one_introduction = ""
+        save_comment(driver, comments, film_name)
+        save_introduction(driver, introductions, film_name)
+        save_description(driver, descriptions, film_name)
+        save_director(driver, directors, film_name)
+
+    comments.close()
+    introductions.close()
+    descriptions.close()
+    directors.close()
+    return
+
+
+def save_comment(driver, comments, film_name):
+    film_hot_comments = BeautifulSoup(driver.page_source, 'lxml').find_all('div', class_="comment-content")
+    if film_hot_comments is None:
+        comments.write(film_name + ": 暂无评价\n")
+    else:
+        for one_comment in film_hot_comments:
+            comment_str = ""
+            if one_comment.string is not None:
+                comment_str = one_comment.string
+            comment_str = comment_str.replace(' ', '')
+            comment_str = comment_str.replace('\n', '')
+            comments.write(film_name + ": " + comment_str + "\n")
+    return
+
+
+def save_introduction(driver, introductions, film_name):
+    film_introductions = BeautifulSoup(driver.page_source, "lxml").find_all('li', class_='ellipsis')
+    intro_type = ['类型', '时长', '上映时间']
+    one_introduction = ""
+    if film_introductions is not None:
         for index in range(len(film_introductions)):
-            one_introduction += " " + intro_type[index] + ": "
+            one_introduction += "\n  " + intro_type[index] + ": "
             intro_content = film_introductions[index].string
             if intro_content is None:
                 one_introduction += "暂无"
             else:
+                intro_content = intro_content.replace(' ', '')
+                intro_content = intro_content.replace('\n', '')
                 one_introduction += intro_content
-        save_introduction.write(film_name + ":" + one_introduction + "\n")
-
-        film_description = BeautifulSoup(driver.page_source, "lxml").find('span', class_='dra')
-        if film_description == '':
-            save_description.write(film_name + ": 暂无简介\n")
-        else:
-            save_description.write(film_name + ": " + film_description.string + "\n")
-
-    save_comments.close()
-    save_introduction.close()
-    save_description.close()
+    introductions.write(film_name + ":" + one_introduction + "\n")
     return
 
 
+def save_description(driver, descriptions, film_name):
+    film_description = BeautifulSoup(driver.page_source, "lxml").find('span', class_='dra')
+    if film_description is None and film_description.string is not None:
+        descriptions.write(film_name + ": 暂无剧情简介\n")
+    else:
+        descriptions.write(film_name + ": " + film_description.string + "\n")
+    return
+
+
+def save_director(driver, directors, film_name):
+    film_director = BeautifulSoup(driver.page_source, 'lxml').find('div', class_="celebrity-type")
+    director_str = ""
+    if film_director is not None and film_director.string is not None:
+        director_str = film_director.string
+    director_str = director_str.replace(' ', '')
+    director_str = director_str.replace('\n', '')
+    res = film_name + " 导演: "
+    if director_str == "导演":
+        # film_director.next_sibling is ""
+        name_lists = film_director.next_sibling.next_sibling
+        names = name_lists.find_all('a', class_='name')
+        for one_name in names:
+            name_str = one_name.string
+            name_str = name_str.replace(' ', '')
+            name_str = name_str.replace('\n', '')
+            res += name_str + "; "
+    else:
+        res += "暂无"
+    directors.write(res + "\n")
+    return
+
+
+"""
 def get_film_name_and_score(show_type, offset):
     params = {'showType': show_type, 'offset': offset}
     r = requests.get("https://maoyan.com/films", params=params)
@@ -99,3 +150,4 @@ def get_film_name_and_score(show_type, offset):
         f.write(res)
     f.close()
     return
+"""
