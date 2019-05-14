@@ -1,4 +1,3 @@
-# import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import time
@@ -10,8 +9,8 @@ def login_and_get_info():
     driver.get("https://passport.meituan.com/account/unitivelogin"
                "?service=maoyan&continue=https%3A%2F%2Fmaoyan.com%2Fpassport%2Flogin%3Fredirect%3D%252F")
 
-    driver.find_element_by_name("email").send_keys("18805199056")
-    driver.find_element_by_name("password").send_keys("123456cgm")
+    driver.find_element_by_name("email").send_keys("******")
+    driver.find_element_by_name("password").send_keys("******")
     driver.find_element_by_name("commit").click()
 
     time.sleep(3)
@@ -132,6 +131,57 @@ def save_director(driver, directors, film_name):
 
 
 def save_to_db():
+    save_info_to_db()
+    save_description_to_db()
+    save_comments_to_db()
+    return
+
+
+def save_info_to_db():
+    introduction = open("film_introduction.txt", "r", encoding="UTF-8")
+    director = open("film_director.txt", "r", encoding="UTF-8")
+    score = open("mao_yan_films.txt", "r", encoding="UTF-8")
+    introductions = introduction.readlines()
+    directors = director.readlines()
+    scores = score.readlines()
+
+    one_film_name = ""
+    one_film_type = ""
+    one_filming_location = ""
+    one_film_duration = ""
+    for index in range(len(introductions)):
+        one_introduction_line = introductions[index]
+        if index % 4 == 0:
+            one_film_name = one_introduction_line[:-1]
+        elif index % 4 == 1:
+            one_film_type = one_introduction_line[one_introduction_line.find(': ') + 1:]
+        elif index % 4 == 2:
+            if one_introduction_line.find('/') != -1:
+                one_filming_location = one_introduction_line[
+                                one_introduction_line.find(': ') + 1:one_introduction_line.find('/')]
+                one_film_duration = one_introduction_line[one_introduction_line.find('/') + 1:]
+            else:
+                one_filming_location = one_introduction_line[one_introduction_line.find(': ') + 1:]
+                one_film_duration = "暂无"
+        elif index % 4 == 3:
+            one_film_released_time = one_introduction_line[one_introduction_line.find(': ') + 1:]
+            one_director_line = directors[int(index/4)]
+            one_film_director = one_director_line[one_director_line.find(': ') + 1:-1]
+            if one_film_director == "暂":
+                one_film_director = "暂无"
+            else:
+                one_film_director = one_film_director[:-1]
+            one_film_score = scores[int(index/4)][scores[int(index/4)].find(': ') + 1:]
+            dbConnector.insert_film_info(int(index/4), one_film_name, one_film_director, one_film_type,
+                                         one_filming_location, one_film_duration, one_film_released_time,
+                                         one_film_score)
+    introduction.close()
+    director.close()
+    score.close()
+    return
+
+
+def save_description_to_db():
     description = open("film_description.txt", "r", encoding="UTF-8")
     lists = description.readlines()
     description_id = 0
@@ -141,6 +191,21 @@ def save_to_db():
             film_description = one[one.find(': ') + 1:]
             dbConnector.insert_film_description(description_id, film_name, film_description)
         description_id += 1
+    description.close()
+    return
+
+
+def save_comments_to_db():
+    comment = open("film_comments.txt", "r", encoding="UTF-8")
+    lists = comment.readlines()
+    comment_id = 0
+    for one in lists:
+        if one is not None and one.__len__() > 0:
+            film_name = one[:one.find(': ')]
+            film_comment = one[one.find(': ') + 1:]
+            dbConnector.insert_film_comment(comment_id, film_name, film_comment)
+        comment_id += 1
+    comment.close()
     return
 
 
@@ -148,9 +213,10 @@ def save_to_db():
 def get_film_name_and_score(show_type, offset):
     params = {'showType': show_type, 'offset': offset}
     r = requests.get("https://maoyan.com/films", params=params)
-    film_names = BeautifulSoup(r.content.decode(), 'lxml').find_all('div', class_="channel-detail movie-item-title")
+    film_names = BeautifulSoup(r.content.decode(), 'lxml').find_all('div', 
+                            class_="channel-detail movie-item-title")
     film_score = BeautifulSoup(r.content.decode(), 'lxml').find_all('div',
-                                                                    class_="channel-detail channel-detail-orange")
+                            class_="channel-detail channel-detail-orange")
 
     f = open("mao_yan_films.txt", "a", encoding="UTF-8")
 
