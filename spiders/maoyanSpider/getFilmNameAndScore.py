@@ -2,6 +2,7 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import time
+from spiders.maoyanSpider import dbConnector
 
 
 def login_and_get_info():
@@ -127,6 +128,19 @@ def save_director(driver, directors, film_name):
     else:
         res += "暂无"
     directors.write(res + "\n")
+    return
+
+
+def save_to_db():
+    description = open("film_description.txt", "r", encoding="UTF-8")
+    lists = description.readlines()
+    description_id = 0
+    for one in lists:
+        if one is not None and one.__len__() > 0:
+            film_name = one[:one.find(': ')]
+            film_description = one[one.find(': ') + 1:]
+            dbConnector.insert_film_description(description_id, film_name, film_description)
+        description_id += 1
     return
 
 
