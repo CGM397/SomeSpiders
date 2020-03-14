@@ -5,10 +5,12 @@ from spiders.maoyanSpider import dbConnector
 
 
 def login_and_get_info():
+    # 将Chrome驱动包放在Anaconda或者python的Scripts目录下
     driver = webdriver.Chrome()
     driver.get("https://passport.meituan.com/account/unitivelogin"
                "?service=maoyan&continue=https%3A%2F%2Fmaoyan.com%2Fpassport%2Flogin%3Fredirect%3D%252F")
 
+    # 账号密码自行注册
     driver.find_element_by_name("email").send_keys("******")
     driver.find_element_by_name("password").send_keys("******")
     driver.find_element_by_name("commit").click()
